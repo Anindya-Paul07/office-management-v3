@@ -22,6 +22,7 @@ app.use(cors());
 app.use(express.json());
 
 app.use(express.static(path.join(__dirname, 'client')));
+app.use("/uploads", express.static("uploads"));
 
 // Use the routes
 app.use('/api/employees', employeeRoutes);

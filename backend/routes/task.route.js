@@ -3,12 +3,13 @@ import {
   assignTask,
   getTasks,
   updateTask,
-  deleteTask
+  deleteTask,
+  uploadTaskAttachment
 } from '../controllers/task.cont.js';
 
 const router = express.Router();
 
-router.post('/', assignTask);
+router.post('/', uploadTaskAttachment, assignTask);
 router.get('/', getTasks);
 router.put('/:id', updateTask);
 router.delete('/:id', deleteTask);

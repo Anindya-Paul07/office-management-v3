@@ -82,12 +82,16 @@ const Tasks = () => {
         <textarea
           placeholder="Description"
           value={newTask.description}
-          onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
+          onChange={(e) =>
+            setNewTask({ ...newTask, description: e.target.value })
+          }
           className="border px-2 py-1 w-full"
         />
         <select
           value={newTask.assignedTo}
-          onChange={(e) => setNewTask({ ...newTask, assignedTo: e.target.value })}
+          onChange={(e) =>
+            setNewTask({ ...newTask, assignedTo: e.target.value })
+          }
           className="border px-2 py-1 w-full"
         >
           <option value="">Assign to</option>
@@ -112,6 +116,15 @@ const Tasks = () => {
           <option value="In Progress">In Progress</option>
           <option value="Completed">Completed</option>
         </select>
+        <input
+          type="file"
+          multiple
+          accept=".pdf,.csv,.xls,.xlsx,.png,.jpg,.jpeg"
+          onChange={(e) =>
+            setNewTask({ ...newTask, attachments: [...e.target.files] })
+          }
+          className="border px-2 py-1 w-full"
+        />
         <button
           onClick={handleAdd}
           className="bg-blue-500 text-white px-4 py-1 rounded"
@@ -141,6 +154,43 @@ const Tasks = () => {
                 </p>
                 <p className="text-sm">📅 Due: {task.dueDate?.slice(0, 10)}</p>
                 <p className="text-sm">📌 Status: {task.status}</p>
+                {task.attachments && task.attachments.length > 0 && (
+                  <div className="mt-2">
+                    <h4 className="text-sm font-semibold">📎 Attachments:</h4>
+                    <ul className="space-y-1 mt-1">
+                      {task.attachments.map((filePath, idx) => {
+                        const fileUrl = `http://localhost:5000/${filePath.replace(
+                          /\\/g,
+                          "/"
+                        )}`;
+                        const fileExt = filePath.split(".").pop().toLowerCase();
+                        const isImage = ["jpg", "jpeg", "png"].includes(
+                          fileExt
+                        );
+                        return (
+                          <li key={idx}>
+                            {isImage ? (
+                              <img
+                                src={fileUrl}
+                                alt={`Attachment ${idx + 1}`}
+                                className="w-32 h-auto rounded shadow border"
+                              />
+                            ) : (
+                              <a
+                                href={fileUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-blue-600 underline"
+                              >
+                                {filePath.split("/").pop()}
+                              </a>
+                            )}
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </div>
+                )}
               </div>
 
               <div className="flex gap-3">
@@ -182,7 +232,10 @@ const Tasks = () => {
                 <textarea
                   value={editedTask.description}
                   onChange={(e) =>
-                    setEditedTask({ ...editedTask, description: e.target.value })
+                    setEditedTask({
+                      ...editedTask,
+                      description: e.target.value,
+                    })
                   }
                   className="border px-2 py-1 w-full"
                 />
