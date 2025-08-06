@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { getEmployees } from '../services/employeeService';
-import { getAttendance, markAttendance } from '../services/attendanceService';
+import { getAttendanceByDate, markAttendance } from '../services/attendanceService';
 
 const Attendance = () => {
   const [employees, setEmployees] = useState([]);
@@ -10,17 +10,37 @@ const Attendance = () => {
 
   useEffect(() => {
     fetchEmployees();
-    fetchAttendance();
   }, []);
 
+  useEffect(() => {
+    if (selectedDate) {
+      fetchAttendanceByDate(selectedDate);
+    }
+  }, [selectedDate]);
+
   const fetchEmployees = async () => {
-    const res = await getEmployees();
-    setEmployees(res.data);
+    try {
+      const res = await getEmployees();
+      setEmployees(res.data);
+    } catch (err) {
+      console.error("Error fetching employees:", err);
+    }
   };
 
-  const fetchAttendance = async () => {
-    const res = await getAttendance();
-    setAttendanceList(res.data);
+  const fetchAttendanceByDate = async (date) => {
+    try {
+      const res = await getAttendanceByDate(date);
+      setAttendanceList(res.data);
+
+      // Pre-fill statuses if already marked
+      const newStatuses = {};
+      res.data.forEach(record => {
+        newStatuses[record.employee?._id] = record.status;
+      });
+      setStatuses(newStatuses);
+    } catch (err) {
+      console.error("Error fetching attendance by date:", err);
+    }
   };
 
   const handleStatusChange = (employeeId, status) => {
@@ -28,15 +48,19 @@ const Attendance = () => {
   };
 
   const handleSubmit = async () => {
-    for (const empId in statuses) {
-      await markAttendance({
-        employee: empId,
-        date: selectedDate,
-        status: statuses[empId]
-      });
+    try {
+      for (const empId in statuses) {
+        await markAttendance({
+          employee: empId,
+          date: selectedDate,
+          status: statuses[empId]
+        });
+      }
+      fetchAttendanceByDate(selectedDate);
+      alert("Attendance submitted successfully.");
+    } catch (err) {
+      console.error("Error submitting attendance:", err);
     }
-    setStatuses({});
-    fetchAttendance();
   };
 
   const getStatusIcon = (status) => {
@@ -52,6 +76,7 @@ const Attendance = () => {
     <div>
       <h1 className="text-2xl font-semibold mb-4">Attendance</h1>
 
+      {/* ✅ Date Picker (Unchanged) */}
       <div className="mb-4">
         <label className="font-semibold mr-2">Select Date:</label>
         <input
@@ -62,6 +87,7 @@ const Attendance = () => {
         />
       </div>
 
+      {/* ✅ Attendance Form */}
       <div className="space-y-4 mb-6">
         {employees.map(emp => (
           <div key={emp._id} className="bg-white shadow p-4 rounded flex justify-between items-center">
@@ -88,15 +114,17 @@ const Attendance = () => {
         ))}
       </div>
 
+      {/* ✅ Submit Button */}
       <button onClick={handleSubmit} className="bg-blue-600 text-white px-4 py-2 rounded">
         Submit Attendance
       </button>
 
-      <h2 className="text-xl font-semibold mt-8 mb-2">All Attendance Records</h2>
+      {/* ✅ Filtered Attendance Records */}
+      <h2 className="text-xl font-semibold mt-8 mb-2">Attendance Records for {selectedDate}</h2>
       <div className="space-y-2">
         {attendanceList.map((record) => (
           <div key={record._id} className="bg-gray-100 p-2 rounded">
-            {getStatusIcon(record.status)} {record.employee?.name || "Unknown"} - {record.status} on {new Date(record.date).toLocaleDateString()}
+            {getStatusIcon(record.status)} {record.employee?.name || "Unknown"} - {record.status}
           </div>
         ))}
       </div>
