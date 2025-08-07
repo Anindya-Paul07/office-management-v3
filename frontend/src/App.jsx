@@ -9,6 +9,8 @@ import Attendance from './pages/attendance';
 import Salary from './pages/salary';
 import Employees from './pages/employee';
 import Reports from './pages/report';
+import Departments from './pages/department';
+// import Designations from './pages/designation';
 
 const App = () => {
   return (
@@ -24,6 +26,8 @@ const App = () => {
             <Route path="/salary" element={<Salary />} />
             <Route path="/employees" element={<Employees />} />
             <Route path="/reports" element={<Reports />} />
+            <Route path="/departments" element={<Departments />} />
+            {/* <Route path="/designations" element={<Designations />} /> */}
           </Routes>
         </div>
       </div>

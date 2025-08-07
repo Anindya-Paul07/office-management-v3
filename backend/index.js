@@ -10,6 +10,8 @@ import taskRoutes from './routes/task.route.js';
 import attendanceRoutes from './routes/attendance.route.js';
 import salaryRoutes from './routes/salary.route.js';
 import reportRoutes from './routes/report.route.js';
+import designationRoutes from './routes/designation.route.js'
+import departmentRoutes from './routes/department.route.js'
 
 dotenv.config();
 const app = express();
@@ -30,6 +32,9 @@ app.use('/api/tasks', taskRoutes);
 app.use('/api/attendance', attendanceRoutes);
 app.use('/api/salaries', salaryRoutes);
 app.use('/api/reports', reportRoutes);
+app.use('/api/designations', designationRoutes);
+app.use('/api/departments', departmentRoutes);
+
 
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'client', 'index.html'));
