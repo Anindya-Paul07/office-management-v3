@@ -23,12 +23,32 @@ export const getDesignations = async (req, res) => {
 };
 
 // Update designation
+export const updateDesignation = async (req, res) => {
+  try {
+    const designation = await Designation.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    if (!designation) return res.status(404).json({ message: "Designation not found" });
+    res.json(designation);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+//Assign designation
 export const assignDesignation = async (req, res) => {
   try {
-    const { id } = req.params;
+    const { employeeId } = req.params;
     const { designationId } = req.body;
 
-    const employee = await Employee.findByIdAndUpdate(id, { designation: designationId }, { new: true });
+    const employee = await Employee.findByIdAndUpdate(
+      employeeId,
+      { designation: designationId || null },
+      { new: true }
+    );
+
+    if (!employee) {
+      return res.status(404).json({ message: "Employee not found" });
+    }
+
     res.status(200).json(employee);
   } catch (err) {
     res.status(500).json({ message: err.message });

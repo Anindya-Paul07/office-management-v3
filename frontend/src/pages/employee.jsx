@@ -1,171 +1,344 @@
+// Employees.jsx
 import React, { useEffect, useState } from "react";
 import {
-  getEmployees,
-  createEmployee,
-  updateEmployee,
-  deleteEmployee,
-} from "../services/employeeService";
+  Box,
+  Heading,
+  Table,
+  Thead,
+  Tbody,
+  Tr,
+  Th,
+  Td,
+  Button,
+  Spinner,
+  Text,
+  HStack,
+  Modal,
+  ModalOverlay,
+  ModalContent,
+  ModalHeader,
+  ModalFooter,
+  ModalBody,
+  ModalCloseButton,
+  FormControl,
+  FormLabel,
+  Input,
+  Select,
+  useDisclosure,
+  useToast,
+  AlertDialog,
+  AlertDialogBody,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogContent,
+  AlertDialogOverlay,
+} from "@chakra-ui/react";
+import { getEmployees, updateEmployee, deleteEmployee } from "../services/employeeService";
+import { getDepartments } from "../services/departmentService";
+import { getDesignations } from "../services/designationService";
 
 const Employees = () => {
   const [employees, setEmployees] = useState([]);
-  const [newEmployee, setNewEmployee] = useState({
-    name: "",
-    position: "",
-    email: "",
-  });
+  const [loading, setLoading] = useState(true);
+  const [selectedEmployee, setSelectedEmployee] = useState(null);
+  const [departments, setDepartments] = useState([]);
+  const [designations, setDesignations] = useState([]);
+  const [formData, setFormData] = useState({});
+  const toast = useToast();
 
-  useEffect(() => {
-    fetchEmployees();
+  // For Edit Modal
+  const { isOpen, onOpen, onClose } = useDisclosure();
+
+  // For Delete Confirmation Dialog
+  const {
+    isOpen: isDeleteOpen,
+    onOpen: onDeleteOpen,
+    onClose: onDeleteClose,
+  } = useDisclosure();
+  const cancelRef = React.useRef();
+
+  // Load employees
+  const loadEmployees = () => {
+    setLoading(true);
+    getEmployees()
+      .then((res) => {
+        setEmployees(res.data);
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  };
+
+  // Load dropdown data
+  const loadDropdowns = () => {
+    getDepartments().then((res) => setDepartments(res.data));
+    getDesignations().then((res) => setDesignations(res.data));
+  };
+
+  React.useEffect(() => {
+    loadEmployees();
+    loadDropdowns();
   }, []);
 
-  const fetchEmployees = async () => {
-    const res = await getEmployees();
-    setEmployees(res.data);
+  // Open edit modal with employee data
+  const handleEditClick = (employee) => {
+    setSelectedEmployee(employee);
+    setFormData({
+      name: employee.name || "",
+      email: employee.email || "",
+      department: employee.department?._id || "",
+      designation: employee.designation?._id || "",
+      status: employee.status || "Active",
+      joinedAt: employee.joinedAt ? employee.joinedAt.split("T")[0] : "",
+      salary: employee.salary || "",
+    });
+    onOpen();
   };
 
-  const handleAdd = async () => {
-    await createEmployee(newEmployee);
-    setNewEmployee({ name: "", position: "", email: "" });
-    fetchEmployees();
+  // Handle input changes
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleDelete = async (id) => {
-    await deleteEmployee(id);
-    fetchEmployees();
+  // Update employee info
+  const handleUpdate = () => {
+    if (!selectedEmployee) return;
+
+    updateEmployee(selectedEmployee._id, formData)
+      .then(() => {
+        toast({
+          title: "Employee updated successfully",
+          status: "success",
+          duration: 3000,
+          isClosable: true,
+        });
+        loadEmployees();
+        onClose();
+      })
+      .catch(() => {
+        toast({
+          title: "Failed to update employee",
+          status: "error",
+          duration: 3000,
+          isClosable: true,
+        });
+      });
   };
 
-  const handleUpdate = async (id) => {
-    await updateEmployee(id, editedEmployee);
-    setEditingId(null);
-    fetchEmployees();
+  // Delete employee (with confirmation)
+  const [employeeToDelete, setEmployeeToDelete] = useState(null);
+
+  const confirmDelete = (employee) => {
+    setEmployeeToDelete(employee);
+    onDeleteOpen();
   };
 
-  const [editingId, setEditingId] = useState(null);
-  const [editedEmployee, setEditedEmployee] = useState({
-    name: "",
-    position: "",
-    email: "",
-  });
+  const handleDelete = () => {
+    if (!employeeToDelete) return;
+
+    deleteEmployee(employeeToDelete._id)
+      .then(() => {
+        toast({
+          title: "Employee deleted",
+          status: "info",
+          duration: 3000,
+          isClosable: true,
+        });
+        loadEmployees();
+        onDeleteClose();
+      })
+      .catch(() => {
+        toast({
+          title: "Failed to delete employee",
+          status: "error",
+          duration: 3000,
+          isClosable: true,
+        });
+      });
+  };
 
   return (
-    <div>
-      <h1 className="text-2xl font-semibold mb-4">Employees</h1>
+    <Box p={6}>
+      <Heading mb={6}>Employees</Heading>
+      {loading ? (
+        <Spinner />
+      ) : employees.length === 0 ? (
+        <Text>No employees found</Text>
+      ) : (
+        <Table variant="simple">
+          <Thead>
+            <Tr>
+              <Th>Name</Th>
+              <Th>Email</Th>
+              <Th>Department</Th>
+              <Th>Designation</Th>
+              <Th>Status</Th>
+              <Th>Joined Date</Th>
+              <Th>Actions</Th>
+            </Tr>
+          </Thead>
+          <Tbody>
+            {employees.map((emp) => (
+              <Tr key={emp._id}>
+                <Td>{emp.name}</Td>
+                <Td>{emp.email}</Td>
+                <Td>{emp.department?.name || "N/A"}</Td>
+                <Td>{emp.designation?.title || "N/A"}</Td>
+                <Td>{emp.status}</Td>
+                <Td>{emp.joinedAt ? new Date(emp.joinedAt).toLocaleDateString() : "N/A"}</Td>
+                <Td>
+                  <HStack spacing={2}>
+                    <Button size="sm" colorScheme="blue" onClick={() => handleEditClick(emp)}>
+                      Edit
+                    </Button>
+                    <Button
+                      size="sm"
+                      colorScheme="red"
+                      onClick={() => confirmDelete(emp)}
+                    >
+                      Delete
+                    </Button>
+                  </HStack>
+                </Td>
+              </Tr>
+            ))}
+          </Tbody>
+        </Table>
+      )}
 
-      {/* Add new employee */}
-      <div className="mb-6 space-x-2">
-        <input
-          type="text"
-          placeholder="Name"
-          value={newEmployee.name}
-          onChange={(e) =>
-            setNewEmployee({ ...newEmployee, name: e.target.value })
-          }
-          className="border px-2 py-1"
-        />
-        <input
-          type="text"
-          placeholder="Position"
-          value={newEmployee.position}
-          onChange={(e) =>
-            setNewEmployee({ ...newEmployee, position: e.target.value })
-          }
-          className="border px-2 py-1"
-        />
-        <input
-          type="email"
-          placeholder="Email"
-          value={newEmployee.email}
-          onChange={(e) =>
-            setNewEmployee({ ...newEmployee, email: e.target.value })
-          }
-          className="border px-2 py-1"
-        />
-        <button
-          onClick={handleAdd}
-          className="bg-blue-500 text-white px-4 py-1 rounded"
-        >
-          Add
-        </button>
-      </div>
+      {/* Edit Employee Modal */}
+      <Modal isOpen={isOpen} onClose={onClose} size="lg" isCentered>
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>Edit Employee</ModalHeader>
+          <ModalCloseButton />
+          <ModalBody>
+            <FormControl mb={3} isRequired>
+              <FormLabel>Name</FormLabel>
+              <Input
+                name="name"
+                value={formData.name}
+                onChange={handleInputChange}
+                placeholder="Full Name"
+              />
+            </FormControl>
 
-      {/* List employees */}
-      {employees.map((emp) => (
-      <div key={emp._id} className="bg-white p-4 shadow rounded relative">
-        {editingId === emp._id ? (
-          <>
-            <input
-              type="text"
-              value={editedEmployee.name}
-              onChange={(e) =>
-                setEditedEmployee({ ...editedEmployee, name: e.target.value })
-              }
-              className="border px-2 py-1 mb-1 w-full"
-            />
-            <input
-              type="text"
-              value={editedEmployee.position}
-              onChange={(e) =>
-                setEditedEmployee({
-                  ...editedEmployee,
-                  position: e.target.value,
-                })
-              }
-              className="border px-2 py-1 mb-1 w-full"
-            />
-            <input
-              type="email"
-              value={editedEmployee.email}
-              onChange={(e) =>
-                setEditedEmployee({ ...editedEmployee, email: e.target.value })
-              }
-              className="border px-2 py-1 mb-2 w-full"
-            />
-            <div className="flex gap-2">
-              <button
-                onClick={() => handleUpdate(emp._id)}
-                className="bg-green-500 text-white px-3 py-1 rounded"
+            <FormControl mb={3} isRequired>
+              <FormLabel>Email</FormLabel>
+              <Input
+                type="email"
+                name="email"
+                value={formData.email}
+                onChange={handleInputChange}
+                placeholder="Email Address"
+              />
+            </FormControl>
+
+            <FormControl mb={3} isRequired>
+              <FormLabel>Department</FormLabel>
+              <Select
+                name="department"
+                value={formData.department}
+                onChange={handleInputChange}
+                placeholder="Select Department"
               >
-                Save
-              </button>
-              <button
-                onClick={() => setEditingId(null)}
-                className="bg-gray-400 text-white px-3 py-1 rounded"
+                {departments.map((dep) => (
+                  <option key={dep._id} value={dep._id}>
+                    {dep.name}
+                  </option>
+                ))}
+              </Select>
+            </FormControl>
+
+            <FormControl mb={3} isRequired>
+              <FormLabel>Designation</FormLabel>
+              <Select
+                name="designation"
+                value={formData.designation}
+                onChange={handleInputChange}
+                placeholder="Select Designation"
               >
+                {designations.map((des) => (
+                  <option key={des._id} value={des._id}>
+                    {des.title}
+                  </option>
+                ))}
+              </Select>
+            </FormControl>
+
+            <FormControl mb={3}>
+              <FormLabel>Status</FormLabel>
+              <Select
+                name="status"
+                value={formData.status}
+                onChange={handleInputChange}
+              >
+                <option value="Active">Active</option>
+                <option value="Inactive">Inactive</option>
+              </Select>
+            </FormControl>
+
+            <FormControl mb={3}>
+              <FormLabel>Joined Date</FormLabel>
+              <Input
+                type="date"
+                name="joinedAt"
+                value={formData.joinedAt}
+                onChange={handleInputChange}
+              />
+            </FormControl>
+
+            <FormControl mb={3}>
+              <FormLabel>Salary</FormLabel>
+              <Input
+                type="number"
+                name="salary"
+                value={formData.salary}
+                onChange={handleInputChange}
+                placeholder="Salary Amount"
+              />
+            </FormControl>
+          </ModalBody>
+
+          <ModalFooter>
+            <Button colorScheme="blue" mr={3} onClick={handleUpdate}>
+              Update
+            </Button>
+            <Button onClick={onClose}>Cancel</Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog
+        isOpen={isDeleteOpen}
+        leastDestructiveRef={cancelRef}
+        onClose={onDeleteClose}
+        isCentered
+      >
+        <AlertDialogOverlay>
+          <AlertDialogContent>
+            <AlertDialogHeader fontSize="lg" fontWeight="bold">
+              Delete Employee
+            </AlertDialogHeader>
+
+            <AlertDialogBody>
+              Are you sure you want to delete{" "}
+              <strong>{employeeToDelete?.name}</strong>? This action cannot be undone.
+            </AlertDialogBody>
+
+            <AlertDialogFooter>
+              <Button ref={cancelRef} onClick={onDeleteClose}>
                 Cancel
-              </button>
-            </div>
-          </>
-        ) : (
-          <>
-            <h2 className="text-lg font-bold">{emp.name}</h2>
-            <p>{emp.position}</p>
-            <p>{emp.email}</p>
-            <div className="absolute top-2 right-2 flex gap-2">
-              <button
-                onClick={() => {
-                  setEditingId(emp._id);
-                  setEditedEmployee({
-                    name: emp.name,
-                    position: emp.position,
-                    email: emp.email,
-                  });
-                }}
-                className="text-blue-500 font-bold"
-              >
-                Edit
-              </button>
-              <button
-                onClick={() => handleDelete(emp._id)}
-                className="text-red-600 font-bold"
-              >
-                ×
-              </button>
-            </div>
-          </>
-        )}
-      </div>
-      ))}
-    </div>
+              </Button>
+              <Button colorScheme="red" onClick={handleDelete} ml={3}>
+                Delete
+              </Button>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialogOverlay>
+      </AlertDialog>
+    </Box>
   );
 };
 

@@ -23,13 +23,24 @@ export const getDepartments = async (req, res) => {
 };
 
 // Update department
+export const updateDepartment = async (req, res) => {
+  try {
+    const department = await Department.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    if (!department) return res.status(404).json({ message: "Department not found" });
+    res.json(department);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+//Assign departments
 export const assignDepartment = async (req, res) => {
   try {
-    const { id } = req.params;
+    const { employeeId } = req.params; // employee id
     const { departmentId } = req.body;
-
-    const employee = await Employee.findByIdAndUpdate(id, { department: departmentId }, { new: true });
-    res.status(200).json(employee);
+    const employee = await Employee.findByIdAndUpdate(employeeId, { department: departmentId || null }, { new: true });
+    if (!employee) return res.status(404).json({ message: "Employee not found" });
+    res.json(employee);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

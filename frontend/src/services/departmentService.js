@@ -6,3 +6,7 @@ export const getDepartments = () => axios.get(API_URL);
 export const createDepartment = (data) => axios.post(API_URL, data);
 export const updateDepartment = (id, data) => axios.put(`${API_URL}/${id}`, data);
 export const deleteDepartment = (id) => axios.delete(`${API_URL}/${id}`);
+
+// Assign department to employee
+export const assignDepartmentToEmployee = (employeeId, departmentId) =>
+  axios.put(`${API_URL}/assign/${employeeId}`, { departmentId });

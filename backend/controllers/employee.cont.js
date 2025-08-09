@@ -12,7 +12,7 @@ export const createEmployee = async (req, res) => {
 
 export const getEmployees = async (req, res) => {
   try {
-    const employees = await Employee.find();
+    const employees = await Employee.find().populate('department').populate('designation');
     res.json(employees);
   } catch (error) {
     res.status(500).json({ error: error.message });
